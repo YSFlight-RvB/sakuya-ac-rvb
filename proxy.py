@@ -173,8 +173,7 @@ async def handle_client(client_reader, client_writer):
                                             message_to_client.append(YSchat.message(f"Porting you to YSFlight {YSF_VERSION}, This is currently Experimental"))
                                             message_to_client.append(YSchat.message(f"Please report any bugs to the server admin or join with the correct version"))
                                             data = YSviaversion.genViaVersion(player.username, YSF_VERSION) #TODO: Refactor using the FSNETCMD packet.
-                                            writer.write(data)
-                                            continue
+                                            data = data
 
                                     elif packet_type == "FSNETCMD_JOINREQUEST":
                                         decode  = FSNETCMD_JOINREQUEST(packet)
