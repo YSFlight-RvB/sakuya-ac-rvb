@@ -54,7 +54,7 @@ class FSNETCMD_AIRCMD: #30
         return FSNETCMD_AIRCMD.encode(aircraft_id, message, with_size)
 
     @staticmethod
-    def set_command(aircraft_id:int, command:str, value: Union[str, int], with_size:bool=False):
+    def set_command(aircraft_id:int, command:str, value: Union[str, int, float], with_size:bool=False):
         """
         This will set the command of the aircraft, useful if you want to
         set the engine power, fuel, etc.

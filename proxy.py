@@ -68,6 +68,7 @@ import asyncio
 info("Welcome to Sakuya AC")
 info("Perfect and Elegant Proxy for your YSFlight Server")
 info("Lisenced under GPLv3")
+info(f"Running on Python {sys.version}")
 info("Press CTRL+C to stop the proxy")
 
 #Load the plugins
@@ -103,6 +104,7 @@ async def handle_client(client_reader, client_writer):
         if peername:
             ipAddr, clientPort = peername
             player.set_ip(ipAddr)
+            player.serverWriter = server_writer
             CONNECTED_PLAYERS.append(player)
             debug("Player object initiated")
 
@@ -170,10 +172,15 @@ async def handle_client(client_reader, client_writer):
 
                                         if player.version != YSF_VERSION and VIA_VERSION:
                                             info(f"ViaVersion enabled : Porting {player.username} from {player.version} to {YSF_VERSION}")
-                                            message_to_client.append(YSchat.message(f"Porting you to YSFlight {YSF_VERSION}, This is currently Experimental"))
-                                            message_to_client.append(YSchat.message(f"Please report any bugs to the server admin or join with the correct version"))
-                                            data = YSviaversion.genViaVersion(player.username, YSF_VERSION) #TODO: Refactor using the FSNETCMD packet.
-                                            data = data
+                                            if player.username != "serverlist_bot":
+                                                message_to_client.append(YSchat.message(f"Porting you to YSFlight {YSF_VERSION}, This is currently Experimental"))
+                                                message_to_client.append(YSchat.message(f"Please report any bugs to the server admin or join with the correct version"))
+                                                data = YSviaversion.genViaVersion(player.username, YSF_VERSION) #TODO: Refactor using the FSNETCMD packet.
+                                                data = data
+
+                                    elif packet_type == "FSNETCMD_REQUESTTESTAIRPLANE":
+                                        data = None
+                                        logging.warning(f"{player.username} tried to summon an AI Aircraft")
 
                                     elif packet_type == "FSNETCMD_JOINREQUEST":
                                         decode  = FSNETCMD_JOINREQUEST(packet)

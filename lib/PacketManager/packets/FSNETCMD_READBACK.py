@@ -37,3 +37,6 @@ class FSNETCMD_READBACK: #6
         if with_size:
             return pack("I",len(buffer))+buffer
         return buffer
+    
+    def __str__(self):
+        return f"{self.read_back_param}, {self.read_back_type}"

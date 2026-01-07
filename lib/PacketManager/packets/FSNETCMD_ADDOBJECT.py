@@ -25,6 +25,27 @@ class FSNETCMD_ADDOBJECT: #5
         if len(buffer)>=120 and should_decode:
             self.decode()
 
+    def __str__(self):
+        return (
+            f"FSNETCMD_ADDOBJECT(\n"
+            f"  object_type={self.object_type},\n"
+            f"  net_type={self.net_type},\n"
+            f"  object_id={self.object_id},\n"
+            f"  iff={self.iff},\n"
+            f"  pos={self.pos},\n"
+            f"  atti={self.atti},\n"
+            f"  identifier={self.identifier},\n"
+            f"  substrname={self.substrname},\n"
+            f"  ysfid={self.ysfid},\n"
+            f"  flags={self.flags},\n"
+            f"  flags0={self.flags0},\n"
+            f"  outsideRadius={self.outsideRadius},\n"
+            f"  aircraft_class={self.aircraft_class},\n"
+            f"  aircraft_category={self.aircraft_category},\n"
+            f"  pilot={self.pilot}\n"
+            f")"
+        )
+
     def decode(self):
         self.object_type, self.net_type = unpack("HH", self.buffer[4:8])
         #If object_type = 0, then it's an aircraft, and client will send

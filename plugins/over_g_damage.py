@@ -18,14 +18,15 @@ class Plugin:
 
     def on_receive(self, data, player, messages_to_client, *args):
         if ENABLED:
-            if abs(player.aircraft.last_packet.g_value)> G_LIM:
-                if time.time() - player.aircraft.last_over_g_message > INTERVAL:
-                    player.aircraft.last_over_g_message = time.time()
-                    damage_packet = FSNETCMD_GETDAMAGE.encode(player.aircraft.id,
-                                                            1, 1,
-                                                            player.aircraft.id,
-                                                            1, 11,0, True)
-                    warning_message = FSNETCMD_TEXTMESSAGE.encode(f"You are exceeding the G Limit for the aircraft!, gValue = {player.aircraft.last_packet.g_value}!",True)
-                    messages_to_client.append(damage_packet)
-                    messages_to_client.append(warning_message)
+            if type(player.aircraft.last_packet) != None:
+                if abs(player.aircraft.last_packet.g_value)> G_LIM:
+                    if time.time() - player.aircraft.last_over_g_message > INTERVAL:
+                        player.aircraft.last_over_g_message = time.time()
+                        damage_packet = FSNETCMD_GETDAMAGE.encode(player.aircraft.id,
+                                                                1, 1,
+                                                                player.aircraft.id,
+                                                                1, 11,0, True)
+                        warning_message = FSNETCMD_TEXTMESSAGE.encode(f"You are exceeding the G Limit for the aircraft!, gValue = {player.aircraft.last_packet.g_value}!",True)
+                        messages_to_client.append(damage_packet)
+                        messages_to_client.append(warning_message)
         return True

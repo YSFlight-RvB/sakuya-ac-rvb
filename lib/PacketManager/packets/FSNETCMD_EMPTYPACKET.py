@@ -3,7 +3,7 @@ from struct import pack
 class FSNETCMD_EMPTYPACKET:
     """
     A template function for empty packets"""
-    def __init__(self, buffer:bytes, should_decode:bool=True):
+    def __init__(self, buffer:bytes=b"", should_decode:bool=True):
         self.buffer = buffer
         if should_decode:
             self.decode()

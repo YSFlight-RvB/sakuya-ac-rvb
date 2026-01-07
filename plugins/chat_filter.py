@@ -19,18 +19,28 @@ class Plugin:
             moderation_string = r'\b(b[i!]tch|cunt|whore|slut|bastard|nude|naked|porn|penis|vagina|boobs|dick|hate|murder|die|n[i!]gg?(er|a|as|ers)|f[a@]gg?ot?|kike|chink|retard|racist|racism|rape|rapist|molest|https?:\/\/\S+|www\.\S+)\b'
         else:
             # Stricter moderation for children
-            moderation_string = r'\b(f[u\*]ck(?:er|ing)?|sh[i!]t(?:ty|head)?|b[i!]tch(?:es|y)?|cunt|ass(?:hole|wipe|hat)?|' \
-                                r'whore|slut(?:ty)?|damn(?:it)?|hell|piss(?:ed)?|bastard|nude|naked|' \
-                                r'sex(?:ual)?|porn(?:ography)?|penis|vagina|boobs?|tits?|titties|dick|' \
-                                r'cock|pussy|boner|' \
-                                r'horny|jerk(?:\s*off)?|masturbat(?:e|ion)|cum(?:ming)?|' \
-                                r'hate|kill|murder|die|stupid|idiot|dumb(?:ass)?|moron|' \
-                                r'n[i!]gg?(?:er|a|as|ers)|f[a@]gg?ot?|kike|chink|spic|wetback|' \
-                                r'retard(?:ed)?|racist|racism|nazi|' \
-                                r'rape(?:d|s)?|rapist|molest(?:er|ed)?|pedophile|' \
-                                r'bl[o0][w0]job|handjob|' \
-                                r'wtf|stfu|gtfo|lmfao|' \
-                                r'https?:\/\/\S+|www\.\S+)\b'
+            moderation_string = (
+                r'\b(f[u\*]ck(?:er|ing)?|sh[i!]t(?:ty|head)?|b[i!]tch(?:es|y)?|cunt|'
+                r'ass(?:hole|wipe|hat)?|whore|slut(?:ty)?|damn(?:it)?|hell|piss(?:ed)?|'
+                r'bastard|nude|naked|sex(?:ual)?|porn(?:ography)?|penis|vagina|boobs?|'
+                r'tits?|titties|dick|cock|pussy|boner|horny|jerk(?:\s*off)?|'
+                r'masturbat(?:e|ion)|cum(?:ming)?|hate|kill|murder|die|stupid|idiot|'
+                r'dumb(?:ass)?|moron|n[i!]gg?(?:er|a|as|ers)|f[a@]gg?ot?|kike|chink|spic|'
+                r'wetback|retard(?:ed)?|racist|racism|nazi|rape(?:d|s)?|rapist|'
+                r'molest(?:er|ed)?|pedophile|bl[o0][w0]job|handjob|wtf|stfu|gtfo|lmfao|'
+                r'https?:\/\/\S+|www\.\S+|1989|ccp|tiananmen\s*square|tiananmen|'
+                r'tian\s*an\s*men|tian\s*men|tian\s*anmen|tian\s*an\s*men\s*square|'
+                r'taiwan|taiwan\s*province|taiwan\s*island|chinese\s*communist\s*party|'
+                r'winnie\s*the\s*pooh|winnie\s*pooh|xi\s*jinping|xjp|tank\s*man|tankman|'
+                r'6\s*4|six\s*four|june\s*4th|june\s*4|64\s*incident|64\s*event|'
+                r'6\s*4\s*event|6\s*4\s*incident|june\s*4th\s*incident|june\s*4th\s*event|'
+                r'chinese\s*government|chinese\s*regime|chinese\s*authorities|'
+                r'chinese\s*state|chinese\s*leadership|chinese\s*party|chinese\s*army|pla|'
+                r'people\s*liberation\s*army|chinese\s*military|chinese\s*police|'
+                r'chinese\s*security|chinese\s*censorship|chinese\s*firewall|'
+                r'great\s*firewall|gfw|chinese\s*propaganda|chinese\s*media|'
+                r'chinese\s*news)\b'
+            )
 
         self.filter_regex = re.compile(moderation_string, re.IGNORECASE)
 

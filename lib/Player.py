@@ -11,6 +11,7 @@ class Player:
         self.version = 0
         self.ip = ""
         self.streamWriterObject = streamWriterObject
+        self.serverWriter = None
         self.is_a_bot = True # We check if they are still present after LOGIN packet, then they're not a bot
         self.iff = 1
         self.connection_closed = False

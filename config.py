@@ -8,9 +8,9 @@ LOGGING_LEVEL = INFO
 # Server Configuration
 # Replace with the YSFlight server address
 SERVER_HOST = "127.0.0.1"
-SERVER_PORT = 7915 # Please put where the normal YSFlight server is running
+SERVER_PORT = 7916 # Please put where the normal YSFlight server is running
 # Port for the proxy server
-PROXY_PORT = 9000
+PROXY_PORT = 7915
 
 # Welcome Message to the playe
 # For formatting use {username}
@@ -43,7 +43,7 @@ VIA_VERSION = True
 # G Limit (abs(g) >= limit) and the player gets killed
 # If you wish to turn off G Limiter, consider using some
 # aribitary value like 100
-G_LIM = 4
+G_LIM = 14
 
 # Will appear as message + player name
 # eg. Detected health hack by <player name>
@@ -74,7 +74,7 @@ DISCORD_ENABLED = False
 
 # Make sure to enable read message intent for the bot.
 
-DISCORD_TOKEN = "DISCORD_BOT_TOKEN"
+DISCORD_TOKEN = "None"
 
 # Channel ID for the chat
 CHANNEL_ID = 0 # Channel ID, as an integer

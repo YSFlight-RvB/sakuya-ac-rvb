@@ -81,18 +81,19 @@ async def monitor_channel(channel_id, playerList:list):
                 if last_message_id is None or message['id'] > last_message_id:  # Ensure only newer messages are processed
                     last_message_id = message['id']
                     if not message['author'].get('bot'): # Skip messages from bot
-                        encoded_msg = txtMsgr.encode(f"[Discord] {message['author']['username']}: {message['content']}", True)
-                        for player in playerList:
-                            if player.streamWriterObject.is_closing():
-                                playerList.remove(player)  # Remove disconnected players
-                                continue
-                            player.streamWriterObject.write(encoded_msg)
-                            try:
-                                await player.streamWriterObject.drain()
-                            except Exception as e:
-                                warning(f"Error while sending message to {player.username}: {e}")
-                                if not player.is_a_bot:
-                                    asyncio.create_task(discord_send_message(channel_id, f"{player.username} has left the server!"))
-                                playerList.remove(player)
+                        if True: # TODO: implement a ban check here
+                            encoded_msg = txtMsgr.encode(f"[Discord] {message['author']['username']}: {message['content']}", True)
+                            for player in playerList:
+                                if player.streamWriterObject.is_closing():
+                                    playerList.remove(player)  # Remove disconnected players
+                                    continue
+                                player.streamWriterObject.write(encoded_msg)
+                                try:
+                                    await player.streamWriterObject.drain()
+                                except Exception as e:
+                                    warning(f"Error while sending message to {player.username}: {e}")
+                                    if not player.is_a_bot:
+                                        asyncio.create_task(discord_send_message(channel_id, f"{player.username} has left the server!"))
+                                    playerList.remove(player)
                         on_new_message(message)
         await asyncio.sleep(1)  # Poll every second (adjust as needed)

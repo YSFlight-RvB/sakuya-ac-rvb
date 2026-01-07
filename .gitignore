@@ -1,6 +1,8 @@
 .ipynb_checkpoints/
 __pycache__/
 lib/__pycache__/
+plugins/llm.txt
 venv/
 flightPacketParser.ipynb
-config.py
+neon_dump.sql
+

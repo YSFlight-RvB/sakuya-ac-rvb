@@ -4,6 +4,7 @@ This can be used as a basis for more complex plugins that may need multiple file
 from lib.PacketManager.packets import FSNETCMD_AIRCMD, FSNETCMD_AIRPLANESTATE, FSNETCMD_TEXTMESSAGE
 from logging import debug
 from config import SMOKE_LIFE, SMOKE_PLANE
+from lib.YSchat import send
 ENABLED = True
 
 class Plugin:
@@ -21,7 +22,10 @@ class Plugin:
         if SMOKE_PLANE and player.aircraft.life<SMOKE_LIFE:
 
             #Add smoke to the plane
-            smoke_packet = FSNETCMD_AIRPLANESTATE(data).smoke()
+            try:
+                smoke_packet = FSNETCMD_AIRPLANESTATE(data).smoke()
+            except:
+                smoke_packet = send(data)
             #forward it on to the server
 
             message_to_server.append(smoke_packet)

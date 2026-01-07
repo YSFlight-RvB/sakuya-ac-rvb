@@ -8,7 +8,7 @@ from lib.YSchat import send
 import struct
 import traceback
 
-ENABLED = True
+ENABLED = False
 RADIUS = 9000 # in meters, within this range planes with different IFF can see each other.
 
 flying_players = {}
