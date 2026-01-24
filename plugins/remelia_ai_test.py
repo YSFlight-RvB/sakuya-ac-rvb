@@ -18,6 +18,8 @@ class Plugin:
                 ai_username=f"Sakuya Izayoi",
                 start_pos_name="NORTH10000_01",
                 iff=3, # IFF 4 in game is IFF 3 in sakuya, we subtract 1, so iff 1 in game is iff 0 in sakuya
-                g_limit=99999))
+                g_limit=99999,
+                attackGround = True # we want to the ai aircraft to attack ground
+                ))
         message_to_client.append(message("An AI aircraft has been spawned at NORTH10000_01"))
         return True
