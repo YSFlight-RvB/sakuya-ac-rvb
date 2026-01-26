@@ -32,11 +32,11 @@ class Plugin:
         if ENABLED:
             #Send the packet straight back to the server, and prevent it being passed to the client.
             packet = pack("I",len(packet)) + packet
-            message_to_server.append(packet)
+            message_to_server.put_nowait(packet)
             if not hasattr(player, 'custom_packet_sent'):
                 player.custom_packet_sent=True
                 #Send the custom list packets.
                 lc = List_Constructor(self.aircraft_list).get_packets()
                 for packet in lc:
-                    message_to_client.append(packet)
+                    message_to_client.put_nowait(packet)
             return False

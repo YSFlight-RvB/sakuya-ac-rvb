@@ -16,7 +16,7 @@ class Plugin:
         self.plugin_manager = plugin_manager
         self.plugin_manager.register_hook('on_flight_data', self.on_receive)
 
-    def on_receive(self, data, player, messages_to_client, *args):
+    def on_receive(self, data, player, message_to_client, *args):
         if ENABLED:
             if type(player.aircraft.last_packet) != None:
                 if abs(player.aircraft.last_packet.g_value)> G_LIM:
@@ -27,6 +27,6 @@ class Plugin:
                                                                 player.aircraft.id,
                                                                 1, 11,0, True)
                         warning_message = FSNETCMD_TEXTMESSAGE.encode(f"You are exceeding the G Limit for the aircraft!, gValue = {player.aircraft.last_packet.g_value}!",True)
-                        messages_to_client.append(damage_packet)
-                        messages_to_client.append(warning_message)
+                        message_to_client.put_nowait(damage_packet)
+                        message_to_client.put_nowait(warning_message)
         return True

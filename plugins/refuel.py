@@ -37,11 +37,11 @@ class Plugin:
         else:
             a = YSchat.message(f"You are now refueling other players! To refuel the plane must be within {REFUEL_RADIUS}m and have same IFF")
             refuelers[player] = [0, [], False]
-        message_to_client.append(a)
+        message_to_client.put_nowait(a)
 
     def refuel(self, full_message, player, message_to_client, message_to_server):
         #a = FSNETCMD_AIRCMD.set_command(player.aircraft.id, "INITFUEL", "3750kg", True)
-        #message_to_client.append(a)
+        #message_to_client.put_nowait(a)
         #print(player in refueling)
         if player in refuelers:
             a = YSchat.message("You cannot be a refueler while being refueled")
@@ -51,7 +51,7 @@ class Plugin:
         else:
             a = YSchat.message(f"You can now be refueled by other players! To refuel the plane must be within {REFUEL_RADIUS}m and have same IFF")
             refueling[player] = [0, []]
-        message_to_client.append(a)
+        message_to_client.put_nowait(a)
 
     def on_flight_data(self, data, player, message_to_client, message_to_server):
         asyncio.create_task(self.refuel_logic(data, player))
@@ -88,18 +88,18 @@ class Plugin:
                         max_lim = int((player.aircraft.initial_config['WEIGFUEL'])[:-2])
                         if decode.fuel < max_lim:
                             #a = FSNETCMD_AIRCMD.set_command(player.aircraft.id, "INITFUEL", f"{decode.fuel+FUEL_RATE}kg", True)
-                            #message_to_client.append(a)
+                            #message_to_client.put_nowait(a)
                             k.write(FSNETCMD_AIRCMD.set_command(player.aircraft.id, "INITFUEL", f"{decode.fuel+FUEL_RATE}kg", True))
                         elif decode.fuel >= max_lim:
                             a = YSchat.message("The plane is full!")
                             refuelers[refueler][2] = False # No longer refueling
                             k.write(a)
-                            #message_to_client.append(a)
+                            #message_to_client.put_nowait(a)
 
                         if refuelers[refueler][0] < FUEL_RATE:
                             a = YSchat.message("The refueler ran out of fuel!")
                             k.write(a)
-                            #message_to_client.append(a)
+                            #message_to_client.put_nowait(a)
                     else:
                         refuelers[refueler][2] = False # No longer refueling
 
@@ -108,5 +108,5 @@ class Plugin:
             refuelers[player] = [decode.fuel, decode.position, refuelers[player][2]]
             if decode.fuel-FUEL_RATE > 0 and refuelers[player][2]:
                 a = FSNETCMD_AIRCMD.set_command(player.aircraft.id, "INITFUEL", f"{decode.fuel-FUEL_RATE}kg", True)
-                #message_to_client.append(a)
+                #message_to_client.put_nowait(a)
                 k.write(a)

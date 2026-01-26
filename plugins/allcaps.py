@@ -17,7 +17,7 @@ class Plugin:
             message = FSNETCMD_TEXTMESSAGE(data, should_decode=True)
             message.message = message.message.upper()
             message = FSNETCMD_TEXTMESSAGE.encode(f"({message.user}){message.message}", with_size=True)
-            message_to_server.append(message)
+            message_to_server.put_nowait(message)
             
 
         return False

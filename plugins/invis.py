@@ -19,6 +19,6 @@ class Plugin:
                                     0.00, True)
         print(2)
         print(self.plugin_manager.CONNECTED_PLAYERS)
-        message_to_server.append(d)
+        message_to_server.put_nowait(d)
         return True
 

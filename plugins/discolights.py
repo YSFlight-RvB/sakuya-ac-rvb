@@ -13,10 +13,10 @@ class Plugin:
         self.plugin_manager = plugin_manager
         self.plugin_manager.register_hook('on_flight_data', self.on_receive)
 
-    def on_receive(self, data, player, messages_to_client, *args):
+    def on_receive(self, data, player, message_to_client, *args):
         if ENABLED:
             sky_colour_packet = FSNETCMD_SKYCOLOR.encode(randint(0, 255), randint(0, 255), randint(0, 255), True)
             fog_colour_packet = FSNETCMD_FOGCOLOR.encode(randint(0, 255), randint(0, 255), randint(0, 255), True)
-            messages_to_client.append(sky_colour_packet)
-            messages_to_client.append(fog_colour_packet)
+            message_to_client.put_nowait(sky_colour_packet)
+            message_to_client.put_nowait(fog_colour_packet)
         return True

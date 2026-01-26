@@ -22,19 +22,19 @@ class Plugin:
         try:
             args = list(map(int, full_message[4:].split(',')))
         except:
-            message_to_client.append(FSNETCMD_TEXTMESSAGE.encode("Invalid fog argument, usage /fog r,g,b", True))
+            message_to_client.put_nowait(FSNETCMD_TEXTMESSAGE.encode("Invalid fog argument, usage /fog r,g,b", True))
             return
         fog_colour_packet = FSNETCMD_FOGCOLOR.encode(args[0], args[1], args[2], True)
-        message_to_client.append(fog_colour_packet)
+        message_to_client.put_nowait(fog_colour_packet)
 
     def sky(self, full_message, player, message_to_client, message_to_server):
         try:
             args = list(map(int, full_message[4:].split(',')))
         except Exception as e:
-            message_to_client.append(FSNETCMD_TEXTMESSAGE.encode("Invalid sky argument, usage /sky r,g,b", True))
+            message_to_client.put_nowait(FSNETCMD_TEXTMESSAGE.encode("Invalid sky argument, usage /sky r,g,b", True))
             return True
         sky_colour_packet = FSNETCMD_SKYCOLOR.encode(args[0], args[1], args[2], True)
-        message_to_client.append(sky_colour_packet)
+        message_to_client.put_nowait(sky_colour_packet)
         return True
 
     def time(self, full_message, player, message_to_client, message_to_server):
@@ -42,54 +42,54 @@ class Plugin:
         if  requested == 'day' and self.initialWeather:
             packet = FSNETCMD_ENVIRONMENT.set_time(self.initialWeather.buffer, False, True)
             self.initialWeather = FSNETCMD_ENVIRONMENT(packet[4:])
-            message_to_client.append(packet)
+            message_to_client.put_nowait(packet)
 
         elif requested == 'night' and self.initialWeather:
             packet = FSNETCMD_ENVIRONMENT.set_time(self.initialWeather.buffer, True, True)
             self.initialWeather = FSNETCMD_ENVIRONMENT(packet[4:])
-            message_to_client.append(packet)
+            message_to_client.put_nowait(packet)
 
         else:
-            message_to_client.append(FSNETCMD_TEXTMESSAGE.encode("Invalid time argument, usage /time night or /time day", True))
+            message_to_client.put_nowait(FSNETCMD_TEXTMESSAGE.encode("Invalid time argument, usage /time night or /time day", True))
         return True
 
     def visibility(self, full_message, player, message_to_client, message_to_server):
         visibility = int(full_message[4:])
         returnpacket = FSNETCMD_ENVIRONMENT.set_visibility(self.initialWeather.buffer, visibility, True)
         self.initialWeather = FSNETCMD_ENVIRONMENT(returnpacket[4:])
-        message_to_client.append(returnpacket)
+        message_to_client.put_nowait(returnpacket)
         return True
 
     """
-    def on_chat(self, data, player, messages_to_client, *args):
+    def on_chat(self, data, player, message_to_client, *args):
         if ENABLED:
             message = FSNETCMD_TEXTMESSAGE(data).message
             if message[:3].lower() == 'fog':
                 #We'll split the fog r,g,b message into a list of 3 integers
                 fog = list(map(int, message[4:].split(',')))
                 fog_colour_packet = FSNETCMD_FOGCOLOR.encode(fog[0], fog[1], fog[2], True)
-                messages_to_client.append(fog_colour_packet)
+                message_to_client.put_nowait(fog_colour_packet)
 
             if message[:3].lower() == 'sky':
                 sky = list(map(int, message[4:].split(',')))
                 sky_colour_packet = FSNETCMD_SKYCOLOR.encode(sky[0], sky[1], sky[2], True)
-                messages_to_client.append(sky_colour_packet)
+                message_to_client.put_nowait(sky_colour_packet)
 
             if message[:3].lower() == 'day' and self.initialWeather:
                 packet = FSNETCMD_ENVIRONMENT.set_time(self.initialWeather.buffer, False, True)
                 self.initialWeather = FSNETCMD_ENVIRONMENT(packet[4:])
-                messages_to_client.append(packet)
+                message_to_client.put_nowait(packet)
 
             if message[:5].lower() == 'night' and self.initialWeather:
                 packet = FSNETCMD_ENVIRONMENT.set_time(self.initialWeather.buffer, True, True)
                 self.initialWeather = FSNETCMD_ENVIRONMENT(packet[4:])
-                messages_to_client.append(packet)
+                message_to_client.put_nowait(packet)
 
             if message[:3].lower() == 'vis':
                 visibility = int(message[4:])
                 returnpacket = FSNETCMD_ENVIRONMENT.set_visibility(self.initialWeather.buffer, visibility, True)
                 self.initialWeather = FSNETCMD_ENVIRONMENT(returnpacket[4:])
-                messages_to_client.append(returnpacket)
+                message_to_client.put_nowait(returnpacket)
         return False
         """
 

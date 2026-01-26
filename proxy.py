@@ -108,19 +108,27 @@ async def handle_client(client_reader, client_writer):
             CONNECTED_PLAYERS.append(player)
             debug("Player object initiated")
 
-        async def forward(reader, writer, direction, player=player):
+        async def queue_sender(writer, queue):
+            try:
+                while True:
+                    data = await queue.get()
+                    if not writer.is_closing():
+                        writer.write(data)
+                        await writer.drain()
+                    queue.task_done()
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                debug(f"Queue sender error: {e}")
+
+        async def forward(reader, writer, target_queue, direction, player=player):
             try:
                 while True:
                     try:
                         #Test if there are any unsent messages to the client or
                         # server from other processes.
                         keep_message = True # Reset this before each loop.
-                        while direction == "client_to_server" and not message_to_server.empty() and writer and not writer.is_closing():
-                            writer.write(message_to_server.get_nowait())
-                            await writer.drain()
-                        if direction == "server_to_client" and not message_to_client.empty() and writer and not writer.is_closing():
-                            client_writer.write(message_to_client.get_nowait())
-                            await client_writer.drain()
+                        # Queue handling moved to independent tasks queue_sender to prevent blocking
 
                         if not reader.at_eof() or not reader._connection_lost : # Connection closed
                             try:
@@ -277,8 +285,7 @@ async def handle_client(client_reader, client_writer):
 
                             # Forward the packet to the other endpoint if the data packet still exists.
                             if data:
-                                writer.write(data)
-                                await writer.drain()
+                                target_queue.put_nowait(data)
                     except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError) as e:
                         if not player.connection_closed:
                             await close_connection(client_writer, server_writer)
@@ -302,14 +309,19 @@ async def handle_client(client_reader, client_writer):
 
         client_to_server_task = None
         server_to_client_task = None
+        client_sender_task = None
+        server_sender_task = None
 
         try:
             # Start forwarding data between client and server
+            client_sender_task = asyncio.create_task(queue_sender(client_writer, message_to_client))
+            server_sender_task = asyncio.create_task(queue_sender(server_writer, message_to_server))
+            
             client_to_server_task = asyncio.create_task(
-                forward(client_reader, server_writer, "client_to_server")
+                forward(client_reader, server_writer, message_to_server, "client_to_server")
             )
             server_to_client_task = asyncio.create_task(
-                forward(server_reader, client_writer, "server_to_client")
+                forward(server_reader, client_writer, message_to_client, "server_to_client")
             )
 
             # Wait for either task to complete
@@ -321,6 +333,10 @@ async def handle_client(client_reader, client_writer):
             # Cancel pending tasks
             for task in pending:
                 task.cancel()
+                
+            # Cancel sender tasks
+            if client_sender_task: client_sender_task.cancel()
+            if server_sender_task: server_sender_task.cancel()
 
             # Wait for cancelled tasks to finish
             if pending:
@@ -330,7 +346,7 @@ async def handle_client(client_reader, client_writer):
             warning(f"Error in client handler: {e}")
         finally:
             # Clean up tasks if they still exist
-            for task in [t for t in [client_to_server_task, server_to_client_task] if t and not t.done()]:
+            for task in [t for t in [client_to_server_task, server_to_client_task, client_sender_task, server_sender_task] if t and not t.done()]:
                 task.cancel()
 
     except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError) as e:

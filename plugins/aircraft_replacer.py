@@ -21,41 +21,41 @@ class Plugin:
         self.plugin_manager.register_hook('on_join_request', self.on_join_request)
 
 
-    def on_add_object_server(self, data, player, messages_to_client, *args):
+    def on_add_object_server(self, data, player, message_to_client, *args):
         packet = FSNETCMD_ADDOBJECT(data)
         #Swap the aircraft and position
         if packet.pilot == player.username:
             packet.identifier = "EUROFIGHTER_TYPHOON"
-            messages_to_client.append(packet.to_packet())
+            message_to_client.put_nowait(packet.to_packet())
             self.first_add_object = True
             return False
         return True
 
-    # def on_flight_data(self, data, player, messages_to_client, *args):
+    # def on_flight_data(self, data, player, message_to_client, *args):
     #     packet = FSNETCMD_AIRPLANESTATE(data)
     #     if packet.player_id == player.aircraft.id:
 
     #     return True
 
-    # def on_flight_data_server(self, data, player, messages_to_client, *args):
+    # def on_flight_data_server(self, data, player, message_to_client, *args):
     #     packet = FSNETCMD_AIRPLANESTATE(data)
     #     if packet.player_id == player.aircraft.id and self.first_add_object:
     #         packet.position = [0,2000.0,0]
     #         packet.velocity = [25,0,25]
-    #         messages_to_client.append(packet.to_packet())
+    #         message_to_client.put_nowait(packet.to_packet())
 
     #         self.first_add_object = False
     #         return False
     #     return True
 
-    def on_join_request(self, data, player, messages_to_client, message_to_server, *args):
+    def on_join_request(self, data, player, message_to_client, message_to_server, *args):
         packet = FSNETCMD_JOINREQUEST(data)
         #Replace the aircraft:
         packet.aircraft = "EUROFIGHTER_TYPHOON"
-        message_to_server.append(packet.to_packet())
+        message_to_server.put_nowait(packet.to_packet())
         return False
 
-    # def on_receive(self, data, player, messages_to_client, *args):
+    # def on_receive(self, data, player, message_to_client, *args):
     #     if ENABLED:
     #         if abs(player.aircraft.last_packet.g_value)> G_LIM:
     #             if time.time() - player.aircraft.last_over_g_message > INTERVAL:
@@ -65,6 +65,6 @@ class Plugin:
     #                                                         player.aircraft.id,
     #                                                         1, 11,0, True)
     #                 warning_message = FSNETCMD_TEXTMESSAGE.encode(f"You are exceeding the G Limit for the aircraft!, gValue = {player.aircraft.last_packet.g_value}!",True)
-    #                 messages_to_client.append(damage_packet)
-    #                 messages_to_client.append(warning_message)
+    #                 message_to_client.put_nowait(damage_packet)
+    #                 message_to_client.put_nowait(warning_message)
     #     return True

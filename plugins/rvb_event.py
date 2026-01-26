@@ -37,7 +37,7 @@ class Plugin:
         self.plugin_manager.register_command("global", self.global_chat, "Send a message to everyone in server", "g")
 
     def spawn(self, full_message, player, message_to_client, message_to_server):
-        message_to_server.append(FSNETCMD_REQUESTAIAIRPLANE_REMELIA(b"").encode(
+        message_to_server.put_nowait(FSNETCMD_REQUESTAIAIRPLANE_REMELIA(b"").encode(
                 with_size=True,
                 aircraft_name="[RED]UCAV",
                 ai_username=f"Sakuya Izayoi",
@@ -46,7 +46,7 @@ class Plugin:
                 g_limit=99999,
                 patrolMode = True # we want to the ai aircraft to anchor
                 ))
-        message_to_client.append(message("An AI aircraft has been spawned."))
+        message_to_client.put_nowait(message("An AI aircraft has been spawned."))
         return True
 
     def on_login(self, packet, player, message_to_client, message_to_server):
@@ -89,8 +89,8 @@ class Plugin:
         server_ping = get_tcp_rtt_ms(player.serverWriter.transport.get_extra_info("socket"))
         msg = f"\n====AVERAGE RTT=====\nRemelia Ping[Host]: {server_ping[0]}ms\nVariance: {server_ping[1]}ms^2\n\nSakuya Ping[You]: {client_ping[0]}ms\nVariance: {client_ping[1]}ms^2\n"+20*"="+"\n"
         help_msg = f"Connection Detail\nYou [{codn(client_ping[0], 'saku')}]--> Sakuya --> Remelia [{codn(server_ping[0], 'remi')}]\n\n"+20*"="+"\n"
-        message_to_client.append(message(msg))
-        message_to_client.append(message(help_msg))
+        message_to_client.put_nowait(message(msg))
+        message_to_client.put_nowait(message(help_msg))
         return True
 
     def on_chat(self, packet, player, message_to_client, message_to_server):
@@ -116,9 +116,9 @@ class Plugin:
     def global_chat(self, full_message, player, message_to_client, message_to_server):
         args = full_message.split()
         if len(args) == 1:
-            message_to_client.append(message("Invalid command usage\nUsage : /g <message>"))
-            message_to_client.append(message("Example : `/g hello everyone`"))
+            message_to_client.put_nowait(message("Invalid command usage\nUsage : /g <message>"))
+            message_to_client.put_nowait(message("Example : `/g hello everyone`"))
         else:
-            message_to_server.append(message("(" + player.username + ")" + " ".join(args[1::])))
+            message_to_server.put_nowait(message("(" + player.username + ")" + " ".join(args[1::])))
         return False
 

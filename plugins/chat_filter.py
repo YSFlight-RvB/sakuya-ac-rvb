@@ -67,6 +67,6 @@ class Plugin:
         if censored_text != msg:
             # Create a new message with censored content
             message = FSNETCMD_TEXTMESSAGE.encode(censored_text, with_size=True)
-            message_to_server.append(message)
+            message_to_server.put_nowait(message)
             return False
         return True

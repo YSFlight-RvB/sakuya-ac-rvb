@@ -17,10 +17,10 @@ class Plugin:
         self.plugin_manager.register_command('timer', self.timer)
 
     def test(self, full_message, player, message_to_client, message_to_server):
-        message_to_client.append(YSchat.message("Test command received"))
+        message_to_client.put_nowait(YSchat.message("Test command received"))
         return True
 
     def timer(self, full_message, player, message_to_client, message_to_server):
         sleep(5)
-        message_to_client.append(YSchat.message("Timer ended"))
+        message_to_client.put_nowait(YSchat.message("Timer ended"))
         return True

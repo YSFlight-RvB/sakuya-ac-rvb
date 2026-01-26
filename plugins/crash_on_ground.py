@@ -21,10 +21,10 @@ class Plugin:
                 b = FSNETCMD_GETDAMAGE.encode(decode.object_id, 1, 1,
                     player.aircraft.id, 10000,
                     11, 0, True)
-                message_to_client.append(b)
-                message_to_server.append(b)
+                message_to_client.put_nowait(b)
+                message_to_server.put_nowait(b)
                 a = FSNETCMD_READBACK.encode(2, player.aircraft.id, True)
-                message_to_server.append(a)
+                message_to_server.put_nowait(a)
                 return False
         else:
             return True

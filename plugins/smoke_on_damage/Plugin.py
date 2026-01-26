@@ -28,7 +28,7 @@ class Plugin:
                 smoke_packet = send(data)
             #forward it on to the server
 
-            message_to_server.append(smoke_packet)
+            message_to_server.put_nowait(smoke_packet)
 
 
 
@@ -36,11 +36,11 @@ class Plugin:
                 player.aircraft.damage_engine_warn_sent = True
                 #Warn the player
                 message = "Your engine has been damaged! You can't turn on your afterburner!"
-                message_to_client.append(FSNETCMD_TEXTMESSAGE.encode(message,True))
+                message_to_client.put_nowait(FSNETCMD_TEXTMESSAGE.encode(message,True))
 
                 debug(f"Engine damage warning sent to {player.username}")
 
-                message_to_client.append(FSNETCMD_AIRCMD.set_afterburner(player.aircraft.id, False, True))
+                message_to_client.put_nowait(FSNETCMD_AIRCMD.set_afterburner(player.aircraft.id, False, True))
 
             return False
         else:
@@ -50,5 +50,5 @@ class Plugin:
         if ENABLED:
             player.aircraft.just_repaired = True
             if player.aircraft.get_initial_config_value("AFTBURNR") == "TRUE":
-                message_to_client.append(FSNETCMD_AIRCMD.set_afterburner(player.aircraft.id, True, True))
+                message_to_client.put_nowait(FSNETCMD_AIRCMD.set_afterburner(player.aircraft.id, True, True))
         return True
