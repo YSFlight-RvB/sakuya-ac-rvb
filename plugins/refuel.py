@@ -7,7 +7,7 @@ from lib.PacketManager.packets import FSNETCMD_AIRCMD, FSNETCMD_AIRPLANESTATE
 from lib import YSchat
 import asyncio
 
-ENABLED = True
+ENABLED = False
 REFUEL_RADIUS = 500
 # in meters, recomended to set +100-200m more than
 # required range to compensate for distance lag caused by network.

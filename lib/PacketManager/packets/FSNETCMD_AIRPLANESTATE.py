@@ -188,23 +188,35 @@ class FSNETCMD_AIRPLANESTATE: #11
                 self.thrust_vector["reverser"] = unpack("B", self.buffer[96:97])[0]/255.0
                 self.bomb_bay_info = unpack("B", self.buffer[97:98])[0]/255.0
 
+    # def smoke(self):
+    #     if self.packet_version == 4 or self.packet_version == 5:
+    #         flag = unpack('h',self.buffer[56:58])[0]
+    #         flag &= ~((1<<8)|2)
+    #         flag |= (1<<8) |2
+    #         flag |= (1<<9)
+    #         flag |= (1<<10)
+    #         packet = self.buffer[:56] + pack('h',flag) + self.buffer[58:]
+    #         return pack('I',len(packet)) + packet
+    #     else:
+    #         flag = unpack('h',self.buffer[74:76])[0]
+    #         print("initial" + str(flag))
+    #         flag &= ~((255<<8)|2)
+    #         flag |= (255<<8) | 2
+    #         debug(flag)
+    #         print("final" + str(flag))
+    #         packet = self.buffer[:74] + pack('<H',flag) + self.buffer[76:]
+    #         return pack('I',len(packet)) + packet
+    
     def smoke(self):
+        b = bytearray(self.buffer)
         if self.packet_version == 4 or self.packet_version == 5:
-            flag = unpack('h',self.buffer[56:58])[0]
-            flag &= ~((1<<8)|2)
-            flag |= (1<<8) |2
-            flag |= (1<<9)
-            flag |= (1<<10)
-            packet = self.buffer[:56] + pack('h',flag) + self.buffer[58:]
-            return pack('I',len(packet)) + packet
+            offset = 56
         else:
-            flag = unpack('h',self.buffer[74:76])[0]
-
-            flag &= ~((255<<8)|2)
-            flag |= (255<<8) | 2
-            debug(flag)
-            packet = self.buffer[:74] + pack('h',flag) + self.buffer[76:]
-            return pack('I',len(packet)) + packet
+            offset = 74
+        b[offset] |= 2 
+        b[offset+1] = 255 
+        packet = bytes(b)
+        return pack('I', len(packet)) + packet
 
     def stop_firing(self):
         if self.packet_version == 4 or self.packet_version == 5:

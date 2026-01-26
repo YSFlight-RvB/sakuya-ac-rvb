@@ -41,4 +41,4 @@ class Player:
         return False
 
     def __str__(self):
-        return f"Player {self.username} flying {self.aircraft.name} at {self.aircraft.position}"
+        return f"Player {self.username} flying {self.aircraft.name} at {self.aircraft.position}, {type(self.serverWriter)}"

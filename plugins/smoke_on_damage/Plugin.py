@@ -21,11 +21,8 @@ class Plugin:
         the health is below the threshold, if so add smoke"""
         if SMOKE_PLANE and player.aircraft.life<SMOKE_LIFE:
 
-            #Add smoke to the plane
-            try:
-                smoke_packet = FSNETCMD_AIRPLANESTATE(data).smoke()
-            except:
-                smoke_packet = send(data)
+            # Add smoke to the plane
+            smoke_packet = FSNETCMD_AIRPLANESTATE(data).smoke()
             #forward it on to the server
 
             message_to_server.put_nowait(smoke_packet)
