@@ -14,7 +14,7 @@ class FSNETCMD_REQUESTAIAIRPLANE_REMELIA:
         self.ai_username = ""
         self.g_limit = 0.0
         self.iff = 0
-        self.attackGround = False
+        self.patrolMode = False
 
         if should_decode:
             self.decode()
@@ -35,7 +35,7 @@ class FSNETCMD_REQUESTAIAIRPLANE_REMELIA:
 
     @staticmethod
     def encode(aircraft_name: str, start_pos_name: str, ai_username: str,
-               g_limit: float, iff: int, with_size: bool = False, attackGround=False) -> bytes:
+               g_limit: float, iff: int, with_size: bool = False, patrolMode=False) -> bytes:
 
         # Prepare fixed-length string fields
         aircraft_b = aircraft_name.encode("utf-8")[:31].ljust(32, b"\x00")
@@ -49,7 +49,7 @@ class FSNETCMD_REQUESTAIAIRPLANE_REMELIA:
             aiuser_b,
             float(g_limit),
             iff,
-            attackGround
+            patrolMode
         )
 
         buffer = pack("<I", FSNETCMD_REQUESTAIAIRPLANE_REMELIA.COMMAND_ID) + payload

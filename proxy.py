@@ -93,8 +93,8 @@ async def close_connection(client_writer, server_writer):
 
 # Handle client connections
 async def handle_client(client_reader, client_writer):
-    message_to_client = []
-    message_to_server = []
+    message_to_client = asyncio.Queue()
+    message_to_server = asyncio.Queue()
     player = Player.Player(message_to_server, message_to_client, client_writer) #Initialise the player.
 
     try:
@@ -115,11 +115,11 @@ async def handle_client(client_reader, client_writer):
                         #Test if there are any unsent messages to the client or
                         # server from other processes.
                         keep_message = True # Reset this before each loop.
-                        if direction == "client_to_server" and message_to_server and writer and not writer.is_closing():
-                            writer.write(message_to_server.pop(0))
+                        while direction == "client_to_server" and not message_to_server.empty() and writer and not writer.is_closing():
+                            writer.write(message_to_server.get_nowait())
                             await writer.drain()
-                        elif direction == "server_to_client" and message_to_client and writer and not writer.is_closing():
-                            client_writer.write(message_to_client.pop(0))
+                        if direction == "server_to_client" and not message_to_client.empty() and writer and not writer.is_closing():
+                            client_writer.write(message_to_client.get_nowait())
                             await client_writer.drain()
 
                         if not reader.at_eof() or not reader._connection_lost : # Connection closed
@@ -173,8 +173,8 @@ async def handle_client(client_reader, client_writer):
                                         if player.version != YSF_VERSION and VIA_VERSION:
                                             info(f"ViaVersion enabled : Porting {player.username} from {player.version} to {YSF_VERSION}")
                                             if player.username != "serverlist_bot":
-                                                message_to_client.append(YSchat.message(f"Porting you to YSFlight {YSF_VERSION}, This is currently Experimental"))
-                                                message_to_client.append(YSchat.message(f"Please report any bugs to the server admin or join with the correct version"))
+                                                message_to_client.put_nowait(YSchat.message(f"Porting you to YSFlight {YSF_VERSION}, This is currently Experimental"))
+                                                message_to_client.put_nowait(YSchat.message(f"Please report any bugs to the server admin or join with the correct version"))
                                                 data = YSviaversion.genViaVersion(player.username, YSF_VERSION) #TODO: Refactor using the FSNETCMD packet.
                                                 data = data
 
@@ -200,7 +200,7 @@ async def handle_client(client_reader, client_writer):
                                         if player.aircraft.prev_life < player.aircraft.life and player.aircraft.prev_life != -1 and not player.aircraft.just_repaired:
                                             cheatingMsg = YSchat.message(f"{HEALTH_HACK_MESSAGE} by {player.username}")
                                             warning(f"Health hack detected for {player.username}, Connected from {player.ip}")
-                                            message_to_server.append(cheatingMsg)
+                                            message_to_server.put_nowait(cheatingMsg)
 
                                         player.aircraft.just_repaired = False
 
@@ -260,7 +260,7 @@ async def handle_client(client_reader, client_writer):
                                         if player.check_add_object(FSNETCMD_ADDOBJECT(packet)):
                                             info(f"{player.username} has spawned an aircraft")
                                             addSmoke = FSNETCMD_WEAPONCONFIG.addSmoke(player.aircraft.id)
-                                            message_to_server.append(addSmoke)
+                                            message_to_server.put_nowait(addSmoke)
 
                                 elif packet_type == "FSNETCMD_AIRCMD":
                                     #Check the configs against the current aircraft
@@ -270,7 +270,7 @@ async def handle_client(client_reader, client_writer):
 
                                 elif packet_type == "FSNETCMD_PREPARESIMULATION":
                                     welcomeMsg = YSchat.message(WELCOME_MESSAGE.format(username=player.username))
-                                    message_to_server.append(welcomeMsg)
+                                    message_to_server.put_nowait(welcomeMsg)
                                     player.is_a_bot = False
                                     if DISCORD_ENABLED:
                                         asyncio.create_task(discord_send_message(CHANNEL_ID, f"{player.username} has joined the server!"))
