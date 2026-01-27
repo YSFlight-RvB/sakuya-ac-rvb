@@ -8,7 +8,7 @@ import re
 # To disable moderation completely disable this, set ENABLED = False
 # To allow some profanity, set ABOVE_13 = True
 
-ENABLED = True
+ENABLED = False
 ABOVE_13 = False
 
 class Plugin:
