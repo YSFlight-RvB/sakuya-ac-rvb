@@ -95,7 +95,10 @@ async def close_connection(client_writer, server_writer):
 async def handle_client(client_reader, client_writer):
     message_to_client = asyncio.Queue()
     message_to_server = asyncio.Queue()
-    server_write_lock = asyncio.Lock() 
+    
+    # Specific queue for packets that must wait for client activity (Fix for addSmoke race condition)
+    client_sync_queue = asyncio.Queue() 
+    
     player = Player.Player(message_to_server, message_to_client, client_writer) #Initialise the player.
 
     try:
@@ -109,18 +112,13 @@ async def handle_client(client_reader, client_writer):
             CONNECTED_PLAYERS.append(player)
             debug("Player object initiated")
 
-        async def queue_sender(writer, queue, lock=None):
+        async def queue_sender(writer, queue):
             try:
                 while True:
                     data = await queue.get()
                     if not writer.is_closing():
-                        if lock:
-                            async with lock:
-                                writer.write(data)
-                                await writer.drain()
-                        else:
-                            writer.write(data)
-                            await writer.drain()
+                        writer.write(data)
+                        await writer.drain()
                     queue.task_done()
             except asyncio.CancelledError:
                 pass
@@ -131,11 +129,7 @@ async def handle_client(client_reader, client_writer):
             try:
                 while True:
                     try:
-                        #Test if there are any unsent messages to the client or
-                        # server from other processes.
-                        keep_message = True # Reset this before each loop.
-                        # Queue handling moved to independent tasks queue_sender to prevent blocking
-
+                        keep_message = True # Reset this before each loop
                         if not reader.at_eof() or not reader._connection_lost : # Connection closed
                             try:
                                 header = await reader.readexactly(4)  # Ensures we always get 4 bytes
@@ -274,10 +268,9 @@ async def handle_client(client_reader, client_writer):
                                         if player.check_add_object(FSNETCMD_ADDOBJECT(packet)):
                                             info(f"{player.username} has spawned an aircraft")
                                             addSmoke = FSNETCMD_WEAPONCONFIG.addSmoke(player.aircraft.id)
-                                            async with server_write_lock:
-                                                server_writer.write(addSmoke)
-                                                await server_writer.drain()
-                                            # message_to_server.put_nowait(addSmoke)
+                                            # Race Condition Fix:
+                                            # Put in sync queue so it sends AFTER the client acknowledges the object (READBACK)
+                                            client_sync_queue.put_nowait(addSmoke)
 
                                 elif packet_type == "FSNETCMD_AIRCMD":
                                     #Check the configs against the current aircraft
@@ -295,6 +288,18 @@ async def handle_client(client_reader, client_writer):
                             # Forward the packet to the other endpoint if the data packet still exists.
                             if data:
                                 target_queue.put_nowait(data)
+                                
+                            # Race Condition Fix:
+                            # If we just forwarded a packet from Client->Server, we can now safely send
+                            # any injected packets that were waiting for client synchronization.
+                            if direction == "client_to_server" and not client_sync_queue.empty():
+                                while not client_sync_queue.empty():
+                                    try:
+                                        sync_msg = client_sync_queue.get_nowait()
+                                        target_queue.put_nowait(sync_msg)
+                                    except asyncio.QueueEmpty:
+                                        break
+                                        
                     except (asyncio.CancelledError, ConnectionResetError, BrokenPipeError) as e:
                         if not player.connection_closed:
                             await close_connection(client_writer, server_writer)
@@ -324,7 +329,7 @@ async def handle_client(client_reader, client_writer):
         try:
             # Start forwarding data between client and server
             client_sender_task = asyncio.create_task(queue_sender(client_writer, message_to_client))
-            server_sender_task = asyncio.create_task(queue_sender(server_writer, message_to_server, server_write_lock))
+            server_sender_task = asyncio.create_task(queue_sender(server_writer, message_to_server))
             
             client_to_server_task = asyncio.create_task(
                 forward(client_reader, server_writer, message_to_server, "client_to_server")
