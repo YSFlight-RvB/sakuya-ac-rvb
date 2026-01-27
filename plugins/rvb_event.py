@@ -34,6 +34,9 @@ class Plugin:
         self.timer_task = None
         self.game_running = False
         self.elapsed_seconds = 0
+        # The variables in CAPITAL_LETTERS are the only one to configurable
+        # please do not touch the variables in snake_casing.
+
         self.TIMER_INTERVAL = 5 # in seconds
         self.PASSWORD = "test1234"
         self.TOTAL_TIME = 500
@@ -198,6 +201,7 @@ class Plugin:
         if self.timer_task:
             self.game_running = False
             self.timer_task.cancel()
+            self.elapsed_seconds = 0
             self.timer_task = None
 
     def timer_status(self, full_message, player, message_to_client, message_to_server):
