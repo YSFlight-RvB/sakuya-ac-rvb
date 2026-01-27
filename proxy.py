@@ -95,6 +95,7 @@ async def close_connection(client_writer, server_writer):
 async def handle_client(client_reader, client_writer):
     message_to_client = asyncio.Queue()
     message_to_server = asyncio.Queue()
+    server_write_lock = asyncio.Lock() 
     player = Player.Player(message_to_server, message_to_client, client_writer) #Initialise the player.
 
     try:
@@ -108,13 +109,18 @@ async def handle_client(client_reader, client_writer):
             CONNECTED_PLAYERS.append(player)
             debug("Player object initiated")
 
-        async def queue_sender(writer, queue):
+        async def queue_sender(writer, queue, lock=None):
             try:
                 while True:
                     data = await queue.get()
                     if not writer.is_closing():
-                        writer.write(data)
-                        await writer.drain()
+                        if lock:
+                            async with lock:
+                                writer.write(data)
+                                await writer.drain()
+                        else:
+                            writer.write(data)
+                            await writer.drain()
                     queue.task_done()
             except asyncio.CancelledError:
                 pass
@@ -268,7 +274,10 @@ async def handle_client(client_reader, client_writer):
                                         if player.check_add_object(FSNETCMD_ADDOBJECT(packet)):
                                             info(f"{player.username} has spawned an aircraft")
                                             addSmoke = FSNETCMD_WEAPONCONFIG.addSmoke(player.aircraft.id)
-                                            message_to_server.put_nowait(addSmoke)
+                                            async with server_write_lock:
+                                                server_writer.write(addSmoke)
+                                                await server_writer.drain()
+                                            # message_to_server.put_nowait(addSmoke)
 
                                 elif packet_type == "FSNETCMD_AIRCMD":
                                     #Check the configs against the current aircraft
@@ -315,7 +324,7 @@ async def handle_client(client_reader, client_writer):
         try:
             # Start forwarding data between client and server
             client_sender_task = asyncio.create_task(queue_sender(client_writer, message_to_client))
-            server_sender_task = asyncio.create_task(queue_sender(server_writer, message_to_server))
+            server_sender_task = asyncio.create_task(queue_sender(server_writer, message_to_server, server_write_lock))
             
             client_to_server_task = asyncio.create_task(
                 forward(client_reader, server_writer, message_to_server, "client_to_server")

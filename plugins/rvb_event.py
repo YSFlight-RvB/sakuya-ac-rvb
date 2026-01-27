@@ -91,6 +91,7 @@ class Plugin:
             # send to player
             player.streamWriterObject.write(packet)
         else:
+            server_writer = None
             all_players = self.red + self.blue
             if not for_all_clients:
                 for user in all_players:
@@ -98,7 +99,8 @@ class Plugin:
                         server_writer = user.serverWriter
                         break
                 try:
-                    server_writer.write(packet)
+                    if server_writer is not None:
+                        server_writer.write(packet)
                 except Exception as e:
                     # print(all_players)
                     logging.error(e)
@@ -161,12 +163,14 @@ class Plugin:
                     playerlist = self.red + self.blue
                     async def send_to_all(playerlist):
                         for user in playerlist:
-                            print(user)
+                            # print(user)
                             if not user.streamWriterObject.is_closing():
-                                    damage_packet = FSNETCMD_GETDAMAGE.encode(user.aircraft.id,
-                                                                    1, 1,
-                                                                    user.aircraft.id,
-                                                                    100, 11,0, True)
+                                    # print(user.aircraft.id)
+                                    if user.aircraft.id != -1:
+                                        damage_packet = FSNETCMD_GETDAMAGE.encode(user.aircraft.id,
+                                                                        1, 1,
+                                                                        user.aircraft.id,
+                                                                        100, 11,0, True)
 
                                     user.streamWriterObject.write(damage_packet)
 
