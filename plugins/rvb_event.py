@@ -1,6 +1,6 @@
 import logging
 from plugins.remelia.ai_packet import FSNETCMD_REQUESTAIAIRPLANE_REMELIA
-from lib.PacketManager.packets import FSNETCMD_TEXTMESSAGE, FSNETCMD_REJECTJOINREQ
+from lib.PacketManager.packets import FSNETCMD_TEXTMESSAGE, FSNETCMD_REJECTJOINREQ, FSNETCMD_JOINREQUEST
 from lib.PacketManager.packets import FSNETCMD_GETDAMAGE
 from lib.YSchat import message, send
 import struct
@@ -39,22 +39,66 @@ class Plugin:
 
         self.TIMER_INTERVAL = 5 # in seconds
         self.PASSWORD = "test1234"
-        self.TOTAL_TIME = 500
-        self.WARN_INTERVALS = [250, 300, 400, 450, 490] # in seconds, must be multiple of TIMER_INTERVAL
+        self.TOTAL_TIME = 3600
+        self.WARN_INTERVALS = [900, 1800, 2400, 2700, 3000, 3300, 3420, 3480, 3540, 3570, 3580, 3590] # in seconds, must be multiple of TIMER_INTERVAL
 
         # wave specific settings
+        
         self.WAVE_USERNAMES = [
-                    [   # [Username, start position] format
-                        # red
-                        [["Marisa", "NORTH10000_01"], ["Alice", "NORTH10000_02"]], # Wave 1
-                        [["Modi", "NORTH10000_01"], ["Hatsune", "NORTH10000_02"]] # Wave 2
-                    ],
-                    [   # blue
-                        [["Sakuya", "SOUTH10000_01"], ["Reimu", "SOUTH10000_02"]], # Wave 1
-                        [["Virat", "SOUTH10000_01"], ["Allu Arjun", "SOUTH10000_02"]] # Wave 2
-                     ]
+            [   # red
+                [   # Wave 1
+                    ["Marisa", "AI_RED_NORTH"],
+                    ["Alice", "AI_RED_EAST"],
+                    ["Koishi", "AI_RED_SOUTH"],
+                    ["Satori", "AI_RED_CARRIER"]
+                ],
+                [   # Wave 2
+                    ["Reimu", "AI_RED_NORTH"],
+                    ["Sakuya", "AI_RED_EAST"],
+                    ["Patchouli", "AI_RED_SOUTH"],
+                    ["Remilia", "AI_RED_CARRIER"]
+                ],
+                [   # Wave 3
+                    ["Youmu", "AI_RED_NORTH"],
+                    ["Yuyuko", "AI_RED_EAST"],
+                    ["Aya", "AI_RED_SOUTH"],
+                    ["Kanako", "AI_RED_CARRIER"]
+                ],
+                [   # Wave 4
+                    ["Sanae", "AI_RED_NORTH"],
+                    ["Cirno", "AI_RED_EAST"],
+                    ["Meiling", "AI_RED_SOUTH"],
+                    ["Flandre", "AI_RED_CARRIER"]
                 ]
-        self.WAVE_INTERVALS = [10, 250] # please make sure same number of wave intervals and usernames
+            ],
+            [   # blue
+                [   # Wave 1
+                    ["Reisen", "AI_BLUE_NORTH"],
+                    ["Eirin", "AI_BLUE_EAST"],
+                    ["Kaguya", "AI_BLUE_SOUTH"],
+                    ["Tewi", "AI_BLUE_CARRIER"]
+                ],
+                [   # Wave 2
+                    ["Suika", "AI_BLUE_NORTH"],
+                    ["Iku", "AI_BLUE_EAST"],
+                    ["Tenshi", "AI_BLUE_SOUTH"],
+                    ["Shion", "AI_BLUE_CARRIER"]
+                ],
+                [   # Wave 3
+                    ["Byakuren", "AI_BLUE_NORTH"],
+                    ["Shou", "AI_BLUE_EAST"],
+                    ["Nue", "AI_BLUE_SOUTH"],
+                    ["Ichirin", "AI_BLUE_CARRIER"]
+                ],
+                [   # Wave 4
+                    ["Utsuho", "AI_BLUE_NORTH"],
+                    ["Rin", "AI_BLUE_EAST"],
+                    ["Parsee", "AI_BLUE_SOUTH"],
+                    ["Yuugi", "AI_BLUE_CARRIER"]
+                ]
+            ]
+        ]
+        self.WAVE_INTERVALS = [10, 900, 1800, 2400] # please make sure same number of wave intervals and usernames
         self.wave_number = 0
 
     def register(self, plugin_manager):
@@ -176,7 +220,7 @@ class Plugin:
                                                                         user.aircraft.id,
                                                                         100, 11,0, True)
 
-                                    user.streamWriterObject.write(damage_packet)
+                                        user.streamWriterObject.write(damage_packet)
 
                     # await self.broadcast_message(damage_packet, None, True)
                     asyncio.create_task(send_to_all(playerlist))
@@ -203,6 +247,7 @@ class Plugin:
             self.game_running = False
             self.timer_task.cancel()
             self.elapsed_seconds = 0
+            self.wave_number = 0
             self.timer_task = None
 
     def timer_status(self, full_message, player, message_to_client, message_to_server):
@@ -256,10 +301,10 @@ class Plugin:
     def spawn(self, full_message, player, message_to_client, message_to_server):
         message_to_server.put_nowait(FSNETCMD_REQUESTAIAIRPLANE_REMELIA(b"").encode(
                 with_size=True,
-                aircraft_name="[RED]UCAV",
+                aircraft_name="[BLUE]UCAV",
                 ai_username=f"Sakuya Izayoi",
-                start_pos_name="RW01_01",
-                iff=3, # IFF 4 in game is IFF 3 in sakuya, we subtract 1, so iff 1 in game is iff 0 in sakuya
+                start_pos_name="AI_BLUE_CENTER",
+                iff=0, # IFF 4 in game is IFF 3 in sakuya, we subtract 1, so iff 1 in game is iff 0 in sakuya
                 g_limit=99999,
                 patrolMode = True # we want to the ai aircraft to anchor
                 ))
@@ -355,6 +400,16 @@ class Plugin:
             message_to_client.put_nowait(FSNETCMD_REJECTJOINREQ.encode(with_size=True))
             message_to_client.put_nowait(message("Match hasn't started yet.\nPlease wait for admins to start the game"))
             return False
+        data = FSNETCMD_JOINREQUEST(packet)
+        # print(data.start_pos)
+        try:
+            if data.start_pos.startswith("AI"):
+                message_to_client.put_nowait(message("You are not allowed to use AI start positions"))
+                message_to_client.put_nowait(FSNETCMD_REJECTJOINREQ.encode(with_size=True))
+                return False
+        except Exception as e:
+            logging.error(e)
+
         if player in self.red:
             if player.iff == 3:
                 return True

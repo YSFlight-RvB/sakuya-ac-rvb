@@ -50,7 +50,20 @@ class FSNETCMD_WEAPONCONFIG:
             return pack("I",len(buffer))+buffer
         return buffer
 
+    # @staticmethod
+    # def addSmoke(aircraft_id:int):
+    #     # print(FSNETCMD_WEAPONCONFIG.encode(aircraft_id, {32:[66,66,66],33:[66,66,66],34:[66,66,66]}, True))
+    #     return FSNETCMD_WEAPONCONFIG.encode(aircraft_id, {32:[66,66,66],33:[66,66,66],34:[66,66,66]}, True)
+
     @staticmethod
-    def addSmoke(aircraft_id:int):
-        # print(FSNETCMD_WEAPONCONFIG.encode(aircraft_id, {32:[66,66,66],33:[66,66,66],34:[66,66,66]}, True))
-        return FSNETCMD_WEAPONCONFIG.encode(aircraft_id, {32:[66,66,66],33:[66,66,66],34:[66,66,66]}, True)
+    def addSmoke(aircraft_id: int):
+        color = [90,0,0]
+        return FSNETCMD_WEAPONCONFIG.encode(
+            aircraft_id,
+            {
+                32: color,
+                33: color,
+                34: color
+            },
+            True
+        )
