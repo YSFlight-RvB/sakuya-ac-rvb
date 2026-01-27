@@ -224,7 +224,7 @@ class Plugin:
 
                 async def send_to_all(playerlist):
                     for user in playerlist:
-                        print(user)
+                        # print(user)
                         if not user.streamWriterObject.is_closing():
                                 damage_packet = FSNETCMD_GETDAMAGE.encode(user.aircraft.id,
                                                                 1, 1,
@@ -305,11 +305,13 @@ class Plugin:
 
         async def send_to_red(packet):
             for player in self.red:
-                player.streamWriterObject.write(send(packet))
+                if player.streamWriterObject and not player.streamWriterObject.is_closing():
+                    player.streamWriterObject.write(send(packet))
 
         async def send_to_blue(packet):
             for player in self.blue:
-                player.streamWriterObject.write(send(packet))
+                if player.streamWriterObject and not player.streamWriterObject.is_closing():
+                    player.streamWriterObject.write(send(packet))
 
         if player in self.red:
             asyncio.create_task(send_to_red(packet))
