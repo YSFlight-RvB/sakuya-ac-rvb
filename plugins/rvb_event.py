@@ -64,6 +64,7 @@ class Plugin:
         self.plugin_manager.register_hook("on_login", self.on_login)
         self.plugin_manager.register_hook("on_chat", self.on_chat)
         self.plugin_manager.register_hook("on_join_request", self.on_join_request)
+        self.plugin_manager.register_hook("on_prepare_simulation_server", self.on_prepare_simulation)
 
         # commands
         self.plugin_manager.register_command("spawn", self.spawn, "Remelia API usecase")
@@ -304,6 +305,18 @@ class Plugin:
         help_msg = f"Connection Detail\nYou [{codn(client_ping[0], 'saku')}]--> Sakuya --> Remelia [{codn(server_ping[0], 'remi')}]\n\n"+20*"="+"\n"
         message_to_client.put_nowait(message(msg))
         message_to_client.put_nowait(message(help_msg))
+        return True
+
+    def on_prepare_simulation(self, packet, player, message_to_client, message_to_server):
+        # packet is sent after login process is complete,
+        async def send_intro():
+            await asyncio.sleep(1)
+            message_to_client.put_nowait(message("Welcome to 6th Edition of YSFlight Red vs Blue"))
+            message_to_client.put_nowait(message("The server is currently in open beta. Please report any bugs"))
+            message_to_client.put_nowait(message("Use IFF 1 if you're on blue or IFF 4 if you're on red"))
+            message_to_client.put_nowait(message("You will have to wait for an admin to start the game."))
+            message_to_client.put_nowait(message("Hosted from London, UK"))
+        asyncio.create_task(send_intro())
         return True
 
     def on_chat(self, packet, player, message_to_client, message_to_server):
