@@ -43,7 +43,7 @@ class Plugin:
         self.WARN_INTERVALS = [900, 1800, 2400, 2700, 3000, 3300, 3420, 3480, 3540, 3570, 3580, 3590] # in seconds, must be multiple of TIMER_INTERVAL
 
         # wave specific settings
-        
+
         self.WAVE_USERNAMES = [
             [   # red
                 [   # Wave 1
@@ -268,11 +268,19 @@ class Plugin:
             if args[2].lower() == "start":
                 if self.timer_task is None:
                     self.start_timer()
-                message_to_client.put_nowait(message("Succesful start"))
-                message_to_server.put_nowait(message("You can now join the game!"))
+                    message_to_client.put_nowait(message("Succesful start"))
+                    message_to_server.put_nowait(message("You can now join the game!"))
+                else:
+                    message_to_client.put_nowait(message("Game is aldready running!"))
+
                 return True
+
             elif args[2].lower() == "stop":
-                self.stop_timer()
+                try:
+                    self.stop_timer()
+                except Exception as e:
+                    logging.error(e)
+
                 message_to_server.put_nowait(message("The game is has been stopped by admins."))
                 playerlist = self.red + self.blue
 
@@ -356,11 +364,11 @@ class Plugin:
         # packet is sent after login process is complete,
         async def send_intro():
             await asyncio.sleep(1)
-            message_to_client.put_nowait(message("Welcome to 6th Edition of YSFlight Red vs Blue"))
+            message_to_client.put_nowait(message("\nWelcome to 6th Edition of YSFlight Red vs Blue!"))
             message_to_client.put_nowait(message("The server is currently in open beta. Please report any bugs"))
             message_to_client.put_nowait(message("Use IFF 1 if you're on blue or IFF 4 if you're on red"))
-            message_to_client.put_nowait(message("You will have to wait for an admin to start the game."))
-            message_to_client.put_nowait(message("Hosted from London, UK"))
+            message_to_client.put_nowait(message("\nUse /g command to send message to global chat\nBy default you are in team-only chat"))
+            message_to_client.put_nowait(message("\nHosted from London, UK"))
         asyncio.create_task(send_intro())
         return True
 
@@ -371,13 +379,19 @@ class Plugin:
 
         async def send_to_red(packet):
             for player in self.red:
-                if player.streamWriterObject and not player.streamWriterObject.is_closing():
-                    player.streamWriterObject.write(send(packet))
+                try:
+                    if player.streamWriterObject and not player.streamWriterObject.is_closing():
+                        player.streamWriterObject.write(send(packet))
+                except Exception as e:
+                    logging.error(e)
 
         async def send_to_blue(packet):
             for player in self.blue:
-                if player.streamWriterObject and not player.streamWriterObject.is_closing():
-                    player.streamWriterObject.write(send(packet))
+                try:
+                    if player.streamWriterObject and not player.streamWriterObject.is_closing():
+                        player.streamWriterObject.write(send(packet))
+                except Exception as e:
+                    logging.error(e)
 
         if player in self.red:
             asyncio.create_task(send_to_red(packet))
@@ -411,16 +425,24 @@ class Plugin:
             logging.error(e)
 
         if player in self.red:
-            if player.iff == 3:
-                return True
+            if "red" in data.aircraft.lower():
+                if player.iff == 3:
+                    return True
+                else:
+                    err ="You are on RED team, use IFF 4\nPress 4 on keyboard"
             else:
-                message_to_client.put_nowait(message("You are on RED team, use IFF 4\nPress 4 on keyboard"))
-        if player in self.blue:
-            if player.iff == 0:
-                return True
-            else:
-                message_to_client.put_nowait(message("You are on BLUE team, use IFF 1\nPress 1 on keyboard"))
+                err = "You are on RED team, please use a RED aircraft"
 
+        else:
+            if "blue" in data.aircraft.lower():
+                if player.iff == 0:
+                    return True
+                else:
+                    err ="You are on BLUE team, use IFF 1\nPress 1 on keyboard"
+            else:
+                err = "You are on BLUE team, please use a BLUE aircraft"
+
+        message_to_client.put_nowait(message(err))
         message_to_client.put_nowait(FSNETCMD_REJECTJOINREQ.encode(with_size=True))
         return False
 

@@ -8,8 +8,8 @@ class FSNETCMD_JOINREQUEST: #8
     def __init__(self, buffer:bytes, should_decode:bool=True):
         self.buffer = buffer
         self.iff = 0 # The IFF sent is 1 subtracted from the selected value by the player
-        self.aircraft = None
-        self.start_pos = None #It's the STP name
+        self.aircraft = ""
+        self.start_pos = "" #It's the STP name
         self.fuel = None
         self.smoke = None
         if should_decode:
