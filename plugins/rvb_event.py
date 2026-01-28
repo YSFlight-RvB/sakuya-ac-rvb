@@ -311,8 +311,8 @@ class Plugin:
                 with_size=True,
                 aircraft_name="[BLUE]UCAV",
                 ai_username=f"Sakuya Izayoi",
-                start_pos_name="AI_BLUE_CENTER",
-                iff=0, # IFF 4 in game is IFF 3 in sakuya, we subtract 1, so iff 1 in game is iff 0 in sakuya
+                start_pos_name="NORTH10000_01",
+                iff=3, # IFF 4 in game is IFF 3 in sakuya, we subtract 1, so iff 1 in game is iff 0 in sakuya
                 g_limit=99999,
                 patrolMode = True # we want to the ai aircraft to anchor
                 ))
@@ -368,7 +368,7 @@ class Plugin:
             message_to_client.put_nowait(message("The server is currently in open beta. Please report any bugs"))
             message_to_client.put_nowait(message("Use IFF 1 if you're on blue or IFF 4 if you're on red"))
             message_to_client.put_nowait(message("\nUse /g command to send message to global chat\nBy default you are in team-only chat"))
-            message_to_client.put_nowait(message("\nHosted from London, UK"))
+            message_to_client.put_nowait(message("\nHosted from London, UK\n"))
         asyncio.create_task(send_intro())
         return True
 
@@ -406,7 +406,7 @@ class Plugin:
             message_to_client.put_nowait(message("Invalid command usage\nUsage : /g <message>"))
             message_to_client.put_nowait(message("Example : `/g hello everyone`"))
         else:
-            message_to_server.put_nowait(message("(" + player.username + ")" + " ".join(args[1::])))
+            message_to_server.put_nowait(message("[GLOBAL]" + player.alias + ":" + " ".join(args[1::])))
         return False
 
     def on_join_request(self, packet, player, message_to_client, message_to_server):
