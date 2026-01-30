@@ -323,6 +323,9 @@ class Plugin:
         if player.username == "USERNAME":
             player.streamWriterObject.write(message("Please join with a proper username!"))
             return False
+        elif len(player.alias) > 16:
+            player.streamWriterObject.write(message("Please pick a username shorter than 16 characters and rejoin!"))
+            return False
         elif player.username.lower().startswith("[red]") or player.username.lower().startswith("[blue]"):
             if player.username.lower().startswith("[red]"):
                 self.red.append(player)
@@ -366,7 +369,7 @@ class Plugin:
             await asyncio.sleep(1)
             message_to_client.put_nowait(message("\nWelcome to 6th Edition of YSFlight Red vs Blue!"))
             message_to_client.put_nowait(message("The server is currently in open beta. Please report any bugs"))
-            message_to_client.put_nowait(message("Use IFF 1 if you're on blue or IFF 4 if you're on red"))
+            message_to_client.put_nowait(message("Use IFF 1 if you're on blue or IFF 4 if you're on red\nThe G-Limiter is set at +/- 14 G's"))
             message_to_client.put_nowait(message("\nUse /g command to send message to global chat\nBy default you are in team-only chat"))
             message_to_client.put_nowait(message("\nHosted from London, UK\n"))
         asyncio.create_task(send_intro())
