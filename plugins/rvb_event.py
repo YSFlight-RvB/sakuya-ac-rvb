@@ -1,6 +1,6 @@
 import logging
 from plugins.remelia.ai_packet import FSNETCMD_REQUESTAIAIRPLANE_REMELIA
-from lib.PacketManager.packets import FSNETCMD_TEXTMESSAGE, FSNETCMD_REJECTJOINREQ, FSNETCMD_JOINREQUEST
+from lib.PacketManager.packets import *
 from lib.PacketManager.packets import FSNETCMD_GETDAMAGE
 from lib.YSchat import message, send
 import struct
@@ -41,6 +41,38 @@ class Plugin:
         self.PASSWORD = "test1234"
         self.TOTAL_TIME = 3600
         self.WARN_INTERVALS = [900, 1800, 2400, 2700, 3000, 3300, 3420, 3480, 3540, 3570, 3580, 3590] # in seconds, must be multiple of TIMER_INTERVAL
+
+        # dynamic weather
+        self.initial_weather = FSNETCMD_ENVIRONMENT # blank object for ide type hint, fill it later
+        self.weather_schedule = {
+            # --- MORNING (Initial State) ---
+            # 10 : [(255, 0, 0), (0, 255, 0), 10000],
+            10: [(193, 225, 255), (199, 208, 217), 2500],
+
+            # --- TRANSITION 1: Morning to Noon (840s to 900s) ---
+            850: [(179, 219, 250), (190, 211, 223), 4750],
+            860: [(165, 213, 244), (180, 213, 230), 7000],
+            870: [(151, 208, 239), (171, 216, 236), 9250],
+            880: [(136, 202, 233), (161, 218, 243), 11500],
+            890: [(122, 196, 228), (152, 221, 249), 13750],
+            900: [(108, 190, 222), (142, 223, 255), 16000],
+
+            # --- TRANSITION 2: Noon to Sunset (1740s to 1800s) ---
+            1750: [(96, 164, 197), (156, 213, 229), 13583],
+            1760: [(84, 138, 172), (171, 202, 202), 11167],
+            1770: [(73, 112, 147), (185, 192, 176), 8750],
+            1780: [(61, 86, 121), (199, 182, 149), 6333],
+            1790: [(49, 59, 96), (214, 171, 123), 3917],
+            1800: [(37, 33, 71), (228, 161, 96), 1500],
+
+            # --- TRANSITION 3: Sunset to Night (2640s to 2700s) ---
+            2650: [(35, 32, 67), (191, 136, 87), 1500],
+            2660: [(33, 31, 63), (154, 111, 78), 1500],
+            2670: [(31, 30, 59), (118, 86, 69), 1500],
+            2680: [(29, 29, 55), (81, 61, 60), 1500],
+            2690: [(27, 28, 51), (44, 36, 51), 1500],
+            2700: [(26, 28, 48), (8, 12, 42), 1500]
+        }
 
         # wave specific settings
 
@@ -92,14 +124,26 @@ class Plugin:
                 ],
                 [   # Wave 4
                     ["Utsuho", "AI_BLUE_NORTH"],
-                    ["Rin", "AI_BLUE_EAST"],
-                    ["Parsee", "AI_BLUE_SOUTH"],
-                    ["Yuugi", "AI_BLUE_CARRIER"]
+                    ["Hina", "AI_BLUE_EAST"],
+                    ["Chen", "AI_BLUE_SOUTH"],
+                    ["Yukari", "AI_BLUE_CARRIER"]
                 ]
             ]
         ]
+
         self.WAVE_INTERVALS = [10, 900, 1800, 2400] # please make sure same number of wave intervals and usernames
         self.wave_number = 0
+
+        # aircraft count Limiter
+
+        self.stealth = {"BLUE":0, "RED":0}
+        self.heavy = {"BLUE":0, "RED":0}
+        self.MAX_STEALTH_COUNT = 1
+        self.MAX_HEAVY_COUNT = 1
+        self.red_stealth_player = ""
+        self.red_heavy_player = ""
+        self.blue_stealth_player = ""
+        self.blue_heavy_player = ""
 
     def register(self, plugin_manager):
         self.plugin_manager = plugin_manager
@@ -109,6 +153,8 @@ class Plugin:
         self.plugin_manager.register_hook("on_chat", self.on_chat)
         self.plugin_manager.register_hook("on_join_request", self.on_join_request)
         self.plugin_manager.register_hook("on_prepare_simulation_server", self.on_prepare_simulation)
+        self.plugin_manager.register_hook("on_environment_server", self.on_environment_server)
+        self.plugin_manager.register_hook("on_unjoin", self.on_unjoin)
 
         # commands
         self.plugin_manager.register_command("spawn", self.spawn, "Remelia API usecase")
@@ -205,6 +251,17 @@ class Plugin:
                     await self.broadcast_message(message(f"Wave {self.wave_number+1} of AI Aircrafts have been spawned"))
                     self.wave_number += 1
 
+                if self.elapsed_seconds in self.weather_schedule:
+                    currentWeather = self.weather_schedule[self.elapsed_seconds]
+                    skyColor = currentWeather[0]
+                    fogColor = currentWeather[1]
+                    vis = currentWeather[2]
+                    fogColorPacket = FSNETCMD_FOGCOLOR.encode(fogColor[0], fogColor[1], fogColor[2], True)
+                    skyColorPacket = FSNETCMD_SKYCOLOR.encode(skyColor[0], skyColor[1], skyColor[2], True)
+                    visPacket = FSNETCMD_ENVIRONMENT.set_visibility(self.initialWeather.buffer, vis, True)
+                    await self.broadcast_message(fogColorPacket, None, True)
+                    await self.broadcast_message(skyColorPacket, None, True)
+                    await self.broadcast_message(visPacket, None, True)
 
                 if self.elapsed_seconds == self.TOTAL_TIME:
                     await self.broadcast_message(message("GAME OVER!"))
@@ -427,25 +484,80 @@ class Plugin:
         except Exception as e:
             logging.error(e)
 
+        aircraftName = data.aircraft.lower()
+
         if player in self.red:
-            if "red" in data.aircraft.lower():
+            if "red" in aircraftName:
                 if player.iff == 3:
-                    return True
+                        if "stealth" in aircraftName:
+                            if self.stealth["RED"] >= self.MAX_STEALTH_COUNT and not player.username == self.red_stealth_player:
+                                err = f"{self.red_stealth_player} is flying the stealth aircraft\nPick another aircraft\nOnly one stealth aircraft allowed at a time"
+                            else:
+                                self.stealth["RED"] += 1
+                                self.red_stealth_player = player.username
+                                return True
+
+                        elif "heavy" in aircraftName:
+                            if self.heavy["RED"] >= self.MAX_HEAVY_COUNT and not player.username == self.red_heavy_player:
+                                err = f"{self.red_heavy_player} is flying the heavy aircraft\nPick another aircraft\nOnly one heavy aircraft allowed at a time"
+                            else:
+                                self.heavy["RED"] += 1
+                                self.red_heavy_player = player.username
+                                return True
+                        else:
+                            return True
                 else:
                     err ="You are on RED team, use IFF 4\nPress 4 on keyboard"
             else:
                 err = "You are on RED team, please use a RED aircraft"
 
         else:
-            if "blue" in data.aircraft.lower():
+            if "blue" in aircraftName:
                 if player.iff == 0:
-                    return True
+                        if "stealth" in aircraftName:
+                            if self.stealth["BLUE"] >= self.MAX_STEALTH_COUNT and not player.username == self.blue_stealth_player:
+                                err = f"{self.blue_stealth_player} is flying the stealth aircraft\nPick another aircraft\nOnly one stealth aircraft allowed at a time"
+                            else:
+                                self.stealth["BLUE"] += 1
+                                self.blue_stealth_player = player.username
+                                return True
+
+                        elif "heavy" in aircraftName:
+                            if self.heavy["BLUE"] >= self.MAX_HEAVY_COUNT and not player.username == self.blue_heavy_player:
+                                err = f"{self.blue_heavy_player} is flying the heavy aircraft\nPick another aircraft\nOnly one heavy aircraft allowed at a time"
+                            else:
+                                self.heavy["BLUE"] += 1
+                                self.blue_heavy_player = player.username
+                                return True
+                        else:
+                            return True
                 else:
-                    err ="You are on BLUE team, use IFF 1\nPress 1 on keyboard"
+                    err ="You are on BLUE team, use IFF 4\nPress 4 on keyboard"
             else:
                 err = "You are on BLUE team, please use a BLUE aircraft"
+
 
         message_to_client.put_nowait(message(err))
         message_to_client.put_nowait(FSNETCMD_REJECTJOINREQ.encode(with_size=True))
         return False
+
+    def on_unjoin(self, packet, player, message_to_client, message_to_server):
+        if player.username == self.red_stealth_player:
+            self.red_stealth_player = ""
+            self.stealth["RED"] = 0
+        elif player.username == self.red_heavy_player:
+            self.red_heavy_player = ""
+            self.heavy["RED"] = 0
+        elif player.username == self.blue_stealth_player:
+            self.blue_stealth_player = ""
+            self.stealth["BLUE"] = 0
+        elif player.username == self.blue_heavy_player:
+            self.blue_heavy_player = ""
+            self.heavy["BLUE"] = 0
+
+        return True
+
+    def on_environment_server(self, data, *args):
+        self.initialWeather = FSNETCMD_ENVIRONMENT(data)
+        return True
 
