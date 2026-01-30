@@ -323,7 +323,7 @@ class Plugin:
         if player.username == "USERNAME":
             player.streamWriterObject.write(message("Please join with a proper username!"))
             return False
-        elif len(player.alias) > 16:
+        elif len(player.alias) >= 16:
             player.streamWriterObject.write(message("Please pick a username shorter than 16 characters and rejoin!"))
             return False
         elif player.username.lower().startswith("[red]") or player.username.lower().startswith("[blue]"):
