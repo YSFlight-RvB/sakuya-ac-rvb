@@ -1,9 +1,17 @@
 from lib.Aircraft import Aircraft
 from lib.PacketManager.packets import FSNETCMD_LOGON, FSNETCMD_ADDOBJECT
+
+
+class EmptyStreamWriter:
+    def __init__(self):
+        self.is_empty = True
+    def is_closing(self):
+        return True
+
 class Player:
     """
     A player class, this will hold info about the client, including which aircraft they're flying"""
-    def __init__(self, server_messages, client_messages, streamWriterObject):
+    def __init__(self, server_messages=EmptyStreamWriter(), client_messages=EmptyStreamWriter(), streamWriterObject=EmptyStreamWriter()):
 
         self.username = ""
         self.alias = ""

@@ -3,6 +3,7 @@ from plugins.remelia.ai_packet import FSNETCMD_REQUESTAIAIRPLANE_REMELIA
 from lib.PacketManager.packets import *
 from lib.PacketManager.packets import FSNETCMD_GETDAMAGE
 from lib.YSchat import message, send
+from lib.Player import Player
 import struct
 import socket
 import asyncio
@@ -45,35 +46,45 @@ class Plugin:
         # dynamic weather
         self.initial_weather = FSNETCMD_ENVIRONMENT # blank object for ide type hint, fill it later
         self.weather_schedule = {
-            # --- MORNING (Initial State) ---
-            # 10 : [(255, 0, 0), (0, 255, 0), 10000],
-            10: [(193, 225, 255), (199, 208, 217), 2500],
+            # Night (0 to 300)
+            10: [(11, 26, 56), (45, 45, 53), 15000],
 
-            # --- TRANSITION 1: Morning to Noon (840s to 900s) ---
-            850: [(179, 219, 250), (190, 211, 223), 4750],
-            860: [(165, 213, 244), (180, 213, 230), 7000],
-            870: [(151, 208, 239), (171, 216, 236), 9250],
-            880: [(136, 202, 233), (161, 218, 243), 11500],
-            890: [(122, 196, 228), (152, 221, 249), 13750],
-            900: [(108, 190, 222), (142, 223, 255), 16000],
+            # Predawn Phases
+            300: [(12, 29, 56), (60, 50, 60), 18000],
+            525: [(13, 31, 66), (130, 60, 50), 20000],
+            675: [(15, 35, 75), (200, 80, 40), 20000],
 
-            # --- TRANSITION 2: Noon to Sunset (1740s to 1800s) ---
-            1750: [(96, 164, 197), (156, 213, 229), 13583],
-            1760: [(84, 138, 172), (171, 202, 202), 11167],
-            1770: [(73, 112, 147), (185, 192, 176), 8750],
-            1780: [(61, 86, 121), (199, 182, 149), 6333],
-            1790: [(49, 59, 96), (214, 171, 123), 3917],
-            1800: [(37, 33, 71), (228, 161, 96), 1500],
+            # Sunrise Phases
+            750: [(20, 50, 100), (190, 110, 40), 20000],
+            790: [(24, 58, 117), (170, 110, 60), 18000], # Rounded from 787.5
+            825: [(25, 62, 125), (150, 130, 90), 15000],
+            865: [(27, 65, 133), (160, 155, 150), 12000], # Rounded from 862.5
 
-            # --- TRANSITION 3: Sunset to Night (2640s to 2700s) ---
-            2650: [(35, 32, 67), (191, 136, 87), 1500],
-            2660: [(33, 31, 63), (154, 111, 78), 1500],
-            2670: [(31, 30, 59), (118, 86, 69), 1500],
-            2680: [(29, 29, 55), (81, 61, 60), 1500],
-            2690: [(27, 28, 51), (44, 36, 51), 1500],
-            2700: [(26, 28, 48), (8, 12, 42), 1500]
+            # Morning Phases
+            900: [(29, 70, 144), (164, 163, 165), 10000],
+            1050: [(31, 74, 155), (171, 179, 189), 11000],
+
+            # Noon
+            1425: [(33, 79, 166), (178, 195, 213), 12000],
+
+            # Afternoon Phases
+            2175: [(31, 74, 155), (171, 179, 189), 14000],
+            2550: [(29, 70, 144), (164, 163, 165), 16000],
+
+            # Sunset Phases
+            2700: [(27, 65, 133), (160, 155, 150), 18000],
+            2740: [(25, 62, 125), (150, 130, 90), 20000], # Rounded from 2737.5
+            2775: [(24, 58, 117), (170, 110, 60), 25000],
+            2815: [(20, 50, 100), (190, 110, 40), 30000], # Rounded from 2812.5
+
+            # Dusk Phases
+            2850: [(15, 35, 75), (200, 80, 40), 20000],
+            2925: [(13, 31, 66), (130, 60, 50), 20000],
+            3075: [(12, 29, 56), (60, 50, 60), 18000],
+
+            # Night Return
+            3300: [(11, 26, 56), (45, 45, 53), 15000]
         }
-
         # wave specific settings
 
         self.WAVE_USERNAMES = [
@@ -140,10 +151,10 @@ class Plugin:
         self.heavy = {"BLUE":0, "RED":0}
         self.MAX_STEALTH_COUNT = 1
         self.MAX_HEAVY_COUNT = 1
-        self.red_stealth_player = ""
-        self.red_heavy_player = ""
-        self.blue_stealth_player = ""
-        self.blue_heavy_player = ""
+        self.red_stealth_player = Player()
+        self.red_heavy_player = Player()
+        self.blue_stealth_player = Player()
+        self.blue_heavy_player = Player()
 
     def register(self, plugin_manager):
         self.plugin_manager = plugin_manager
@@ -283,6 +294,24 @@ class Plugin:
                     asyncio.create_task(send_to_all(playerlist))
                     self.stop_timer()
 
+                # print("here!")
+                # print(self.red_heavy_player.streamWriterObject.is_closing())
+
+                if self.red_stealth_player.streamWriterObject.is_closing():
+                    self.red_stealth_player = Player()
+                    self.stealth["RED"] = 0
+
+                if self.red_heavy_player.streamWriterObject.is_closing():
+                    self.red_heavy_player = Player()
+                    self.heavy["RED"] = 0
+
+                if self.blue_stealth_player.streamWriterObject.is_closing():
+                    self.blue_stealth_player = Player()
+                    self.stealth["BLUE"] = 0
+
+                if self.blue_heavy_player.streamWriterObject.is_closing():
+                    self.blue_heavy_player = Player()
+                    self.heavy["BLUE"] = 0
 
         except asyncio.CancelledError:
             print("Game Timer Stopped")
@@ -490,19 +519,20 @@ class Plugin:
             if "red" in aircraftName:
                 if player.iff == 3:
                         if "stealth" in aircraftName:
-                            if self.stealth["RED"] >= self.MAX_STEALTH_COUNT and not player.username == self.red_stealth_player:
-                                err = f"{self.red_stealth_player} is flying the stealth aircraft\nPick another aircraft\nOnly one stealth aircraft allowed at a time"
+                            if self.stealth["RED"] >= self.MAX_STEALTH_COUNT and not player.username == self.red_stealth_player.username:
+                                err = f"{self.red_stealth_player.username} is flying the stealth aircraft\nPick another aircraft\nOnly one stealth aircraft allowed at a time"
                             else:
                                 self.stealth["RED"] += 1
-                                self.red_stealth_player = player.username
+                                self.red_stealth_player = player
                                 return True
 
                         elif "heavy" in aircraftName:
-                            if self.heavy["RED"] >= self.MAX_HEAVY_COUNT and not player.username == self.red_heavy_player:
-                                err = f"{self.red_heavy_player} is flying the heavy aircraft\nPick another aircraft\nOnly one heavy aircraft allowed at a time"
+                            if self.heavy["RED"] >= self.MAX_HEAVY_COUNT and not player.username == self.red_heavy_player.username:
+                                err = f"{self.red_heavy_player.username} is flying the heavy aircraft\nPick another aircraft\nOnly one heavy aircraft allowed at a time"
+                                # print(self.red_heavy_player.streamWriterObject.is_closing())
                             else:
                                 self.heavy["RED"] += 1
-                                self.red_heavy_player = player.username
+                                self.red_heavy_player = player
                                 return True
                         else:
                             return True
@@ -515,19 +545,19 @@ class Plugin:
             if "blue" in aircraftName:
                 if player.iff == 0:
                         if "stealth" in aircraftName:
-                            if self.stealth["BLUE"] >= self.MAX_STEALTH_COUNT and not player.username == self.blue_stealth_player:
-                                err = f"{self.blue_stealth_player} is flying the stealth aircraft\nPick another aircraft\nOnly one stealth aircraft allowed at a time"
+                            if self.stealth["BLUE"] >= self.MAX_STEALTH_COUNT and not player.username == self.blue_stealth_player.username:
+                                err = f"{self.blue_stealth_player.username} is flying the stealth aircraft\nPick another aircraft\nOnly one stealth aircraft allowed at a time"
                             else:
                                 self.stealth["BLUE"] += 1
-                                self.blue_stealth_player = player.username
+                                self.blue_stealth_player = player
                                 return True
 
                         elif "heavy" in aircraftName:
-                            if self.heavy["BLUE"] >= self.MAX_HEAVY_COUNT and not player.username == self.blue_heavy_player:
-                                err = f"{self.blue_heavy_player} is flying the heavy aircraft\nPick another aircraft\nOnly one heavy aircraft allowed at a time"
+                            if self.heavy["BLUE"] >= self.MAX_HEAVY_COUNT and not player.username == self.blue_heavy_player.username:
+                                err = f"{self.blue_heavy_player.username} is flying the heavy aircraft\nPick another aircraft\nOnly one heavy aircraft allowed at a time"
                             else:
                                 self.heavy["BLUE"] += 1
-                                self.blue_heavy_player = player.username
+                                self.blue_heavy_player = player
                                 return True
                         else:
                             return True
@@ -542,17 +572,17 @@ class Plugin:
         return False
 
     def on_unjoin(self, packet, player, message_to_client, message_to_server):
-        if player.username == self.red_stealth_player:
-            self.red_stealth_player = ""
+        if player.username == self.red_stealth_player.username:
+            self.red_stealth_player = Player()
             self.stealth["RED"] = 0
-        elif player.username == self.red_heavy_player:
-            self.red_heavy_player = ""
+        elif player.username == self.red_heavy_player.username:
+            self.red_heavy_player = Player()
             self.heavy["RED"] = 0
-        elif player.username == self.blue_stealth_player:
-            self.blue_stealth_player = ""
+        elif player.username == self.blue_stealth_player.username:
+            self.blue_stealth_player = Player()
             self.stealth["BLUE"] = 0
-        elif player.username == self.blue_heavy_player:
-            self.blue_heavy_player = ""
+        elif player.username == self.blue_heavy_player.username:
+            self.blue_heavy_player = Player()
             self.heavy["BLUE"] = 0
 
         return True
