@@ -1,7 +1,6 @@
 import logging
 from plugins.remelia.ai_packet import FSNETCMD_REQUESTAIAIRPLANE_REMELIA
 from lib.PacketManager.packets import *
-from lib.PacketManager.packets import FSNETCMD_GETDAMAGE
 from lib.YSchat import message, send
 from lib.Player import Player
 import struct
@@ -85,6 +84,11 @@ class Plugin:
             # Night Return
             3300: [(11, 26, 56), (45, 45, 53), 15000]
         }
+
+        self.current_sky = b""
+        self.current_fog = b""
+        self.current_vis = b""
+
         # wave specific settings
 
         self.WAVE_USERNAMES = [
@@ -270,6 +274,11 @@ class Plugin:
                     fogColorPacket = FSNETCMD_FOGCOLOR.encode(fogColor[0], fogColor[1], fogColor[2], True)
                     skyColorPacket = FSNETCMD_SKYCOLOR.encode(skyColor[0], skyColor[1], skyColor[2], True)
                     visPacket = FSNETCMD_ENVIRONMENT.set_visibility(self.initialWeather.buffer, vis, True)
+
+                    self.current_fog = fogColorPacket
+                    self.current_sky = skyColorPacket
+                    self.current_vis = visPacket
+
                     await self.broadcast_message(fogColorPacket, None, True)
                     await self.broadcast_message(skyColorPacket, None, True)
                     await self.broadcast_message(visPacket, None, True)
@@ -427,9 +436,9 @@ class Plugin:
     def ping(self, packet, player, message_to_client, message_to_server):
         def codn(ping, side):
             if side == "remi":
-                if ping > 5:
+                if ping > 10:
                     return "Poor"
-                if ping > 2 and ping <= 5:
+                if ping > 2 and ping <= 10:
                     return "Okay"
                 if ping <= 2:
                     return "Excellent"
@@ -441,6 +450,9 @@ class Plugin:
                 if ping < 200:
                     return "Excellent"
 
+            return "Edge case fail"
+
+
         client_ping = get_tcp_rtt_ms(player.streamWriterObject.transport.get_extra_info("socket"))
         server_ping = get_tcp_rtt_ms(player.serverWriter.transport.get_extra_info("socket"))
         msg = f"\n====AVERAGE RTT=====\nRemelia Ping[Host]: {server_ping[0]}ms\nVariance: {server_ping[1]}ms^2\n\nSakuya Ping[You]: {client_ping[0]}ms\nVariance: {client_ping[1]}ms^2\n"+20*"="+"\n"
@@ -450,9 +462,17 @@ class Plugin:
         return True
 
     def on_prepare_simulation(self, packet, player, message_to_client, message_to_server):
-        # packet is sent after login process is complete,
+        # packet is sent after login process is complete
+
+        # TODO : Update with rules of the server before final
         async def send_intro():
-            await asyncio.sleep(1)
+            await asyncio.sleep(1.5)
+
+            if self.elapsed_seconds > 10: # CHANGE HERE IF THE MINIMUM TIME FOR WEATHER DELTA IS CHANGED IN WEATHER HASHMAP
+                message_to_client.put_nowait(self.current_fog)
+                message_to_client.put_nowait(self.current_sky)
+                message_to_client.put_nowait(self.current_vis)
+
             message_to_client.put_nowait(message("\nWelcome to 6th Edition of YSFlight Red vs Blue!"))
             message_to_client.put_nowait(message("The server is currently in open beta. Please report any bugs"))
             message_to_client.put_nowait(message("Use IFF 1 if you're on blue or IFF 4 if you're on red\nThe G-Limiter is set at +/- 14 G's"))
